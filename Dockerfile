@@ -10,8 +10,13 @@ COPY package*.json ./
 # Install the application dependencies
 RUN npm install
 
+#Install ts-node and nodemon globally
+RUN npm install -g ts-node nodemon
+
 # Copy the rest of the application files
 COPY . .
+
+RUN npx prisma generate
 
 # Build the NestJS application
 RUN npm run build

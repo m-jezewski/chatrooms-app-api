@@ -6,10 +6,15 @@ POSTGRES_PASSWORD=admin
 POSTGRES_DB=nestjs
 PGADMIN_DEFAULT_EMAIL=admin@admin.com
 PGADMIN_DEFAULT_PASSWORD=admin
+DATABASE_URL="postgresql://admin:admin@postgres:5432/nestjs"
 ```
 
 ```
 $ docker-compose up --build
+
+$ docker exec -it nestjs_app /bin/sh
+
+$ npx prisma migrate deploy
 ```
 
 ## Run tests

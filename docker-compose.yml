@@ -11,7 +11,12 @@ services:
       - .env
     depends_on:
       - postgres
-    command: npm run start:prod
+    command: nodemon -L
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - postgres
 
   postgres:
     container_name: postgres
@@ -19,7 +24,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /data/postgres:/data/postgres
+      - /data/postgres:/var/lib/postgresql/data
     env_file:
       - .env
     networks:

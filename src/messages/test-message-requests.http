@@ -1,0 +1,5 @@
+### GET request for all messages
+GET http://localhost:3000/messages/
+
+### POST request with new message
+###
