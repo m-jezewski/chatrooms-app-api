@@ -39,4 +39,16 @@ export class AuthService {
     }
     return null;
   }
+
+  async logout(req: Request): Promise<void> {
+    try {
+      req.logout((err) => {
+        if (err) {
+          throw new UnauthorizedException(err.message);
+        }
+      });
+    } catch (error) {
+      throw new UnauthorizedException(error.message);
+    }
+  }
 }

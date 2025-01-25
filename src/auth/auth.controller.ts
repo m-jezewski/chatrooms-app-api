@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   ConflictException,
   Controller,
+  Delete,
   Get,
   Post,
   Req,
@@ -20,6 +21,7 @@ import { Request } from 'express';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   @UseGuards(LocalAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('login')
@@ -33,6 +35,12 @@ export class AuthController {
   @UseGuards(SessionGuard)
   async getAuthSession(@Req() req) {
     return req.session;
+  }
+
+  @UseGuards(SessionGuard)
+  @Delete('logout')
+  async logout(@Req() req: Request): Promise<void> {
+    return this.authService.logout(req);
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
