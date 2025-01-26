@@ -6,9 +6,17 @@ import { MessagesModule } from './messages/messages.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { TextChannelsModule } from './textChannels/textChannels.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, MessagesModule, UsersModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AuthModule,
+    MessagesModule,
+    UsersModule,
+    TextChannelsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

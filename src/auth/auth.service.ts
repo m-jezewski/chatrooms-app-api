@@ -28,8 +28,8 @@ export class AuthService {
     });
   }
 
-  async register(email: string, password: string): Promise<User> {
-    return await this.usersService.createUser({ email, password });
+  async register(email: string, password: string, name: string): Promise<User> {
+    return await this.usersService.createUser({ email, password, name });
   }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -40,13 +40,14 @@ export class AuthService {
     return null;
   }
 
-  async logout(req: Request): Promise<void> {
+  async logout(req: Request): Promise<any> {
     try {
       req.logout((err) => {
         if (err) {
           throw new UnauthorizedException(err.message);
         }
       });
+      return JSON.stringify({ message: 'Logged out' });
     } catch (error) {
       throw new UnauthorizedException(error.message);
     }

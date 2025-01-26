@@ -6,7 +6,6 @@ import { EmailInUseError } from '../utils/customExceptions';
 import { getHashedPassword } from '../utils/bcrypt';
 
 @Injectable()
-@UseInterceptors(ClassSerializerInterceptor)
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
@@ -44,13 +43,11 @@ export class UsersService {
 
   async updateUser(params: { data: Prisma.UserUpdateInput; where: Prisma.UserWhereUniqueInput }): Promise<User> {
     const { data, where } = params;
-    const hashedPassword = getHashedPassword(data.password);
 
     return this.prisma.user.update({
       where,
       data: {
         ...data,
-        password: hashedPassword,
       },
     });
   }

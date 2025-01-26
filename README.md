@@ -14,8 +14,8 @@ SESSION_SECRET=
 $ docker-compose up --build
 
 $ docker exec -it nestjs_app /bin/sh
-
 $ npx prisma migrate deploy
+$ npx prisma db seed
 ```
 
 ## Run tests

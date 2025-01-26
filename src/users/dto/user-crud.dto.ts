@@ -39,7 +39,11 @@ export class CreateUserDto extends OmitType(UserDto, ['createdAt', 'id']) {}
 export class RegisterUserDto extends OmitType(UserDto, ['createdAt', 'id', 'role']) {}
 
 // like createUserDto but all properties optional
-export class UpdateUserDto extends PartialType(CreateUserDto) implements Prisma.UserUpdateInput {}
+class PartialUserDto extends PartialType(CreateUserDto) {}
+
+export class UpdateUserDto
+  extends OmitType<PartialUserDto, 'password'>(PartialUserDto, ['password'] as const)
+  implements Prisma.UserUpdateInput {}
 
 // with password omitted
 export class UserEntity implements Omit<User, 'password'> {

@@ -1,5 +1,48 @@
+
+
 ### GET request for all messages
 GET http://localhost:3000/messages/
 
-### POST request with new message
+###
+GET http://localhost:3000/users/10
+###
+
+### Create user
+### Login route check
+POST http://localhost:3000/users/create
+Content-Type: application/json
+
+{
+  "email": "user4@user.pl",
+  "name": "Jan kowalski",
+  "password": "user12345"
+}
+###
+
+### Login route check
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@user.pl",
+  "password": "user12345"
+}
+
+### Register route check
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "user156t677776776253@user.pl",
+  "password": "user12345",
+  "name": "Tomek"
+}
+
+### Logout route check
+DELETE http://localhost:3000/auth/logout
+Cookie: connect.sid=s%3AV1H-iNiJeMCt3kXK0eCHGcHAOjbLtoSY.9Kzr9GpmELgst6VJrBzXuJZt2WGHqzDbLNJafRWwXSg
+
+### Session test
+GET http://localhost:3000/auth/status
+Cookie: connect.sid=s%3AzOUD3ceo9kR8y3Pc6BwvkET7GqCgWVW0.%2F4keRgfkxygXnUImnAy2Sga8QDWSMHEQDzwXV4Q9cEg
 ###

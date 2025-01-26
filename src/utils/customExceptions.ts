@@ -4,3 +4,10 @@ export class EmailInUseError extends Error {
     Object.setPrototypeOf(this, EmailInUseError.prototype);
   }
 }
+
+export class ChannelWithProvidedNameExistError extends Error {
+  constructor(message = 'Channel with provided name already exists') {
+    super(message);
+    Object.setPrototypeOf(this, EmailInUseError.prototype);
+  }
+}

@@ -34,7 +34,7 @@ export class AuthController {
   @Get('status')
   @UseGuards(SessionGuard)
   async getAuthSession(@Req() req) {
-    return req.session;
+    return req.user;
   }
 
   @UseGuards(SessionGuard)
@@ -47,8 +47,8 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterUserDto, @Req() req: Request): Promise<UserEntity> {
     try {
-      const { email, password } = registerDto;
-      const userDb = await this.authService.register(email, password);
+      const { email, password, name } = registerDto;
+      const userDb = await this.authService.register(email, password, name);
       await this.authService.login(registerDto.email, registerDto.password, req);
       return new UserEntity(userDb);
     } catch (error) {

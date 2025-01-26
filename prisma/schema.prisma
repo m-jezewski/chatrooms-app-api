@@ -26,14 +26,13 @@ model User {
 
 model TextChannel {
   id            Int      @id @default(autoincrement())
-  name          String
+  name          String   @unique
   messages      Message[]
   users         User[]
 }
 
 model Message {
   id            Int      @id @default(autoincrement())
-  title         String
   content       String?
   published     Boolean? @default(false)
   author        User?    @relation(fields: [authorId], references: [id])

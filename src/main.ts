@@ -8,6 +8,11 @@ import { PrismaExceptionFilter } from './prisma/PrismaClientExceptionFilter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  });
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new PrismaExceptionFilter());
 
@@ -17,10 +22,19 @@ async function bootstrap() {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        maxAge: 60000,
+        maxAge: 1000 * 60 * 30,
+        httpOnly: true,
       },
     }),
   );
+
+  app.use((req, res, next) => {
+    if (req.session) {
+      req.session.cookie.maxAge = 1000 * 60 * 30;
+    }
+    next();
+  });
+
   app.use(passport.initialize());
   app.use(passport.session());
 
