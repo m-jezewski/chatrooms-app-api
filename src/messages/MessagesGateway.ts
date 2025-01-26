@@ -1,4 +1,3 @@
-import { Module, OnModuleInit } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -26,7 +25,8 @@ export class MessagesGateway implements OnGatewayInit {
     @MessageBody() { channelId, userId }: { channelId: number; userId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(client);
+    // client.handshake.session.userdata = userdata;
+    // client.handshake.session.save();
 
     const channel = await this.prisma.textChannel.findUnique({
       where: { id: channelId },
