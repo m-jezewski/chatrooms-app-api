@@ -4,8 +4,7 @@ import * as session from 'express-session';
 import { ValidationPipe } from '@nestjs/common';
 import * as passport from 'passport';
 import { PrismaExceptionFilter } from './prisma/PrismaClientExceptionFilter';
-import * as sharedSession from 'express-socket.io-session';
-import { Server } from 'socket.io';
+import { WebSocketAdapter } from './messages/WebSocketAdapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,10 +18,8 @@ async function bootstrap() {
       httpOnly: true,
     },
   });
-  const sharedsession = sharedSession(expressSession, { autosave: true });
-  const io = new Server();
+
   app.use(expressSession);
-  io.use(sharedsession);
 
   app.enableCors({
     origin: 'http://localhost:5173',
@@ -41,6 +38,8 @@ async function bootstrap() {
 
   app.use(passport.initialize());
   app.use(passport.session());
+
+  app.useWebSocketAdapter(new WebSocketAdapter(app, expressSession));
 
   await app.listen(process.env.PORT ?? 3000);
 }

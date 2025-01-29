@@ -1,5 +1,5 @@
 import { TextChannel, User } from '@prisma/client';
-import { IsArray, IsInt, IsNotEmpty, IsNumber, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsDate, IsInt, IsNotEmpty, IsNumber, IsString, MaxLength, MinLength } from 'class-validator';
 import { OmitType, PartialType, PickType } from '@nestjs/mapped-types';
 
 export class TextChannelDto implements TextChannel {
@@ -13,6 +13,9 @@ export class TextChannelDto implements TextChannel {
   @MaxLength(50)
   name: string;
 
+  @IsDate()
+  createdAt: Date;
+
   @IsArray()
   @IsNotEmpty()
   @IsInt({ each: true })
@@ -21,6 +24,6 @@ export class TextChannelDto implements TextChannel {
 
 export class UpdateTextChannelDto extends PartialType(TextChannelDto) {}
 
-export class CreateTextChannelDto extends OmitType(TextChannelDto, ['id'] as const) {}
+export class CreateTextChannelDto extends OmitType(TextChannelDto, ['id', 'createdAt'] as const) {}
 
-export class UpdateChannelUsersDto extends OmitType(TextChannelDto, ['name', 'id'] as const) {}
+export class UpdateChannelUsersDto extends OmitType(TextChannelDto, ['name', 'id', 'createdAt'] as const) {}

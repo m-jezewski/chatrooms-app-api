@@ -9,32 +9,19 @@ async function main() {
       email: 'admin@admin.com',
       name: 'Admin',
       password: getHashedPassword('admin'),
+      role: 'ADMIN',
     },
   });
   const publicUser = await prisma.user.upsert({
-    where: { email: 'public_user@textChannels.com' },
+    where: { email: 'public_user@chatrooms.com' },
     update: {},
     create: {
-      email: 'public_user@textChannels.com',
+      email: 'public_user@chatrooms.com',
       name: 'Public User',
       password: getHashedPassword('public_user_password'),
-      // posts: {
-      //   create: [
-      //     {
-      //       title: 'Follow Prisma on Twitter',
-      //       content: 'https://twitter.com/prisma',
-      //       published: true,
-      //     },
-      //     {
-      //       title: 'Follow Nexus on Twitter',
-      //       content: 'https://twitter.com/nexusgql',
-      //       published: true,
-      //     },
-      //   ],
-      // },
+      role: 'USER',
     },
   });
-  console.log({ admin, publicUser });
 }
 main()
   .then(async () => {
