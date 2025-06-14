@@ -8,6 +8,9 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { WsSessionGuard } from '../auth/guards/ws-session-guard';
+import { UseGuards } from '@nestjs/common';
+import { CurrentWsUser } from './current-ws-user.decorator';
 
 @WebSocketGateway(3001, {
   cors: {
@@ -25,15 +28,14 @@ export class MessagesGateway implements OnGatewayInit {
     console.log('✅ WebSocket Gateway initialized on port 3001');
 
     server.on('connection', (socket) => {
-      // @ts-ignore todo: evil ts-ignore usage
-      const session = socket.handshake.session;
+      const handshake = socket?.handshake as any;
+      const session = handshake.session;
 
       if (!session?.passport?.user) {
         console.warn('❌ Unauthorized WebSocket connection attempt');
         socket.disconnect(true);
         return;
       }
-
       console.log(`✅ User ${session.passport.user} connected`);
     });
 
@@ -42,10 +44,12 @@ export class MessagesGateway implements OnGatewayInit {
     });
   }
 
+  @UseGuards(WsSessionGuard)
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(
-    @MessageBody() { channelId, userId }: { channelId: number; userId: number },
+    @MessageBody() { channelId }: { channelId: number },
     @ConnectedSocket() client: Socket,
+    @CurrentWsUser() userId: number,
   ) {
     console.log(`User ${userId} is joining channel ${channelId}`);
     const channel = await this.prisma.textChannel.findUnique({
@@ -74,11 +78,13 @@ export class MessagesGateway implements OnGatewayInit {
     client.emit('joinedChannel', { messages: recentMessages, channelId: channelId });
   }
 
+  @UseGuards(WsSessionGuard)
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody()
-    { channelId, userId, content }: { channelId: number; userId: number; content: string },
+    { channelId, content }: { channelId: number; userId: number; content: string },
     @ConnectedSocket() client: Socket,
+    @CurrentWsUser() userId: number,
   ) {
     console.log(`User ${userId} send message to channel ${channelId}`);
     const channel = await this.prisma.textChannel.findUnique({ where: { id: channelId } });
@@ -105,9 +111,14 @@ export class MessagesGateway implements OnGatewayInit {
     this.server.to(`channel_${channelId}`).emit('newMessage', { ...message, author: { name: user.name } });
   }
 
+  @UseGuards(WsSessionGuard)
   @SubscribeMessage('leaveChannel')
-  handleLeaveChannel(@MessageBody() { channelId }: { channelId: number }, @ConnectedSocket() client: Socket) {
-    console.log(`User leaving channel ${channelId}`);
+  handleLeaveChannel(
+    @MessageBody() { channelId }: { channelId: number },
+    @ConnectedSocket() client: Socket,
+    @CurrentWsUser() userId: number,
+  ) {
+    console.log(`User ${userId} leaving channel ${channelId}`);
     client.leave(`channel_${channelId}`);
     client.emit('leftChannel', { message: `Left channel ${channelId}` });
   }
