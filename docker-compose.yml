@@ -12,7 +12,6 @@ services:
       - .env
     depends_on:
       - postgres
-    command: nodemon -L
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

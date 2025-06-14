@@ -13,6 +13,8 @@ RUN npm install
 #Install ts-node and nodemon globally
 RUN npm install -g ts-node nodemon
 
+RUN apt-get update && apt-get install -y netcat-openbsd
+
 # Copy the rest of the application files
 COPY . .
 
@@ -21,8 +23,11 @@ RUN npx prisma generate
 # Build the NestJS application
 RUN npm run build
 
+COPY entrypoint.sh /usr/src/app/entrypoint.sh
+RUN chmod +x /usr/src/app/entrypoint.sh
+
 # Expose the application port
 EXPOSE 3000
 
-# Command to run the application
-CMD ["node", "dist/main"]
+# Use custom entrypoint
+CMD ["/usr/src/app/entrypoint.sh"]
