@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as session from 'express-session';
 import { ValidationPipe } from '@nestjs/common';
 import * as passport from 'passport';
@@ -43,6 +44,14 @@ async function bootstrap() {
   app.use(passport.session());
 
   app.useWebSocketAdapter(new WebSocketAdapter(app, expressSession));
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Chatrooms API')
+    .setDescription('API for chatrooms application')
+    .setVersion('1.0')
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
 
   const port = configService.get('port');
   await app.listen(port);

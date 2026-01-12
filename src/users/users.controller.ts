@@ -16,6 +16,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto, RegisterUserDto, UpdateUserDto, UserEntity } from './dto/user-crud.dto';
 import { EmailInUseError } from '../utils/customExceptions';
@@ -23,6 +24,7 @@ import { SessionGuard } from '../auth/guards/session-guard';
 import { Request } from 'express';
 import { User } from '@prisma/client';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

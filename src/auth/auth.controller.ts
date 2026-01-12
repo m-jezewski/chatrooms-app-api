@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto, UserEntity } from '../users/dto/user-crud.dto';
 import { SessionGuard } from './guards/session-guard';
@@ -18,6 +19,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/auth-dto';
 import { Request } from 'express';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

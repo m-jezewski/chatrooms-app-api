@@ -1,35 +1,41 @@
 import { IsDate, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Prisma, User } from '@prisma/client';
 import { Exclude } from 'class-transformer';
 
 export class UserDto implements User {
+  @ApiProperty({ example: 1 })
   @IsInt()
   @IsNotEmpty()
   id: number;
 
+  @ApiProperty({ example: 'user@email.com' })
   @IsString()
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
+  @ApiProperty({ example: 'password', minLength: 5, maxLength: 50 })
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
   @MaxLength(50)
   password: string;
 
+  @ApiProperty({ example: 'Jan Kowalski', minLength: 3, maxLength: 75 })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(75)
   name: string;
 
+  @ApiPropertyOptional({ enum: ['USER', 'ADMIN'], default: 'USER' })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   role: 'USER' | 'ADMIN';
 
+  @ApiProperty()
   @IsDate()
   createdAt: Date;
 }

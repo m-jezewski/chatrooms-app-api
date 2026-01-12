@@ -16,14 +16,15 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { TextChannelsService } from './textChannels.service';
 import { SessionGuard } from '../auth/guards/session-guard';
 import { ChannelWithProvidedNameExistError } from '../utils/customExceptions';
 import { TextChannel, User } from '@prisma/client';
 import { CreateTextChannelDto, UpdateChannelUsersDto, UpdateTextChannelDto } from './dto/textChannels-crud.dto';
-import { UpdateUserDto } from '../users/dto/user-crud.dto';
-import { Request, text } from 'express';
+import { Request } from 'express';
 
+@ApiTags('Text Channels')
 @Controller('textChannels')
 export class TextChannelsController {
   constructor(private readonly textChannelsService: TextChannelsService) {}
