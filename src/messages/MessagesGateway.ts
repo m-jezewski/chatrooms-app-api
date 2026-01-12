@@ -74,6 +74,11 @@ export class MessagesGateway implements OnGatewayInit {
       return client.emit('error', { message: 'Channel not found' });
     }
 
+    const isMember = channel.users.some((user) => user.id === userId);
+    if (!isMember) {
+      return client.emit('error', { message: 'You are not a member of this channel' });
+    }
+
     client.join(`channel_${channelId}`);
     client.emit('joinedChannel', { messages: recentMessages, channelId: channelId });
   }
@@ -87,17 +92,19 @@ export class MessagesGateway implements OnGatewayInit {
     @CurrentWsUser() userId: number,
   ) {
     console.log(`User ${userId} send message to channel ${channelId}`);
-    const channel = await this.prisma.textChannel.findUnique({ where: { id: channelId } });
+    const channel = await this.prisma.textChannel.findUnique({
+      where: { id: channelId },
+      include: { users: true },
+    });
 
     if (!channel) {
       console.warn(`Channel ${channelId} not found`);
       return client.emit('error', { message: 'Channel not found' });
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = channel.users.find((user) => user.id === userId);
     if (!user) {
-      console.warn(`User ${userId} not found`);
-      return client.emit('error', { message: 'User not found' });
+      return client.emit('error', { message: 'You are not a member of this channel' });
     }
 
     const message = await this.prisma.message.create({
