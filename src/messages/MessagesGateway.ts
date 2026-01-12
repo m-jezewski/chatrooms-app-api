@@ -12,9 +12,9 @@ import { WsSessionGuard } from '../auth/guards/ws-session-guard';
 import { UseGuards } from '@nestjs/common';
 import { CurrentWsUser } from './current-ws-user.decorator';
 
-@WebSocketGateway(3001, {
+@WebSocketGateway(parseInt(process.env.WEBSOCKET_PORT), {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN,
     credentials: true,
   },
   cookie: true,

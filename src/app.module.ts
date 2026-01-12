@@ -7,10 +7,16 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TextChannelsModule } from './textChannels/textChannels.module';
+import configuration from './config/configuration';
+import { validationSchema } from './config/validation.schema';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      validationSchema,
+    }),
     PrismaModule,
     AuthModule,
     MessagesModule,

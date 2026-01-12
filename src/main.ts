@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import * as session from 'express-session';
 import { ValidationPipe } from '@nestjs/common';
 import * as passport from 'passport';
@@ -8,13 +9,15 @@ import { WebSocketAdapter } from './messages/WebSocketAdapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
+  const sessionMaxAge = configService.get<number>('session.maxAge');
   const expressSession = session({
-    secret: process.env.SESSION_SECRET,
+    secret: configService.get('session.secret'),
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 1000 * 60 * 30,
+      maxAge: sessionMaxAge,
       httpOnly: true,
     },
   });
@@ -22,7 +25,7 @@ async function bootstrap() {
   app.use(expressSession);
 
   app.enableCors({
-    origin: 'http://localhost:5173',
+    origin: configService.get('cors.origin'),
     credentials: true,
   });
 
@@ -31,7 +34,7 @@ async function bootstrap() {
 
   app.use((req, res, next) => {
     if (req.session) {
-      req.session.cookie.maxAge = 1000 * 60 * 30;
+      req.session.cookie.maxAge = sessionMaxAge;
     }
     next();
   });
@@ -41,7 +44,8 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new WebSocketAdapter(app, expressSession));
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = configService.get('port');
+  await app.listen(port);
 }
 
 bootstrap();
