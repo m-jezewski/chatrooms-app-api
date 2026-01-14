@@ -13,6 +13,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const sessionMaxAge = configService.get<number>('session.maxAge');
+  const isSecureCookie = configService.get<boolean>('session.cookie.secure');
+  const sameSiteCookie = configService.get<'strict' | 'lax' | 'none'>('session.cookie.sameSite');
+
   const expressSession = session({
     secret: configService.get('session.secret'),
     resave: false,
@@ -20,6 +23,8 @@ async function bootstrap() {
     cookie: {
       maxAge: sessionMaxAge,
       httpOnly: true,
+      secure: isSecureCookie,
+      sameSite: sameSiteCookie,
     },
   });
 
