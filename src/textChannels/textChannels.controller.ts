@@ -4,6 +4,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -17,7 +18,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { TextChannelsService } from './textChannels.service';
+import { TextChannelsService, TextChannelWithUsers } from './textChannels.service';
 import { SessionGuard } from '../auth/guards/session-guard';
 import { ChannelWithProvidedNameExistError } from '../utils/customExceptions';
 import { TextChannel, User } from '@prisma/client';
@@ -28,6 +29,14 @@ import { Request } from 'express';
 @Controller('textChannels')
 export class TextChannelsController {
   constructor(private readonly textChannelsService: TextChannelsService) {}
+
+  private isChannelMember(channel: TextChannelWithUsers, userId: number): boolean {
+    return channel.users.some((u) => u.id === userId);
+  }
+
+  private canAccessChannel(channel: TextChannelWithUsers, user: User): boolean {
+    return user.role === 'ADMIN' || this.isChannelMember(channel, user.id);
+  }
 
   @UseGuards(SessionGuard)
   @UseInterceptors(ClassSerializerInterceptor)
@@ -44,11 +53,18 @@ export class TextChannelsController {
   @UseGuards(SessionGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
-  async getTextChannelById(@Param('id', ParseIntPipe) id: number) {
+  async getTextChannelById(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const user = req.user as User;
     const textChannel = await this.textChannelsService.findOne({ id });
+
     if (!textChannel) {
       throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
     }
+
+    if (!this.canAccessChannel(textChannel, user)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+
     return textChannel;
   }
 
@@ -73,13 +89,44 @@ export class TextChannelsController {
   @UseGuards(SessionGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Patch(':id')
-  async updateChannelUsers(@Param('id', ParseIntPipe) id: number, @Body() { users }: UpdateChannelUsersDto) {
+  async updateChannelUsers(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() { users }: UpdateChannelUsersDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as User;
+    const channel = await this.textChannelsService.findOne({ id });
+
+    if (!channel) {
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!this.canAccessChannel(channel, user)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+
     return this.textChannelsService.updateUsersInChannel({ channelId: id, userIds: users });
   }
 
   @UseGuards(SessionGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Put(':id')
-  async updateTextChannel(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateTextChannelDto) {
+  async updateTextChannel(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: UpdateTextChannelDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as User;
+    const channel = await this.textChannelsService.findOne({ id });
+
+    if (!channel) {
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!this.canAccessChannel(channel, user)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+
     return this.textChannelsService.updateTextChannel({
       where: { id },
       data: {
@@ -92,8 +139,20 @@ export class TextChannelsController {
   }
 
   @UseGuards(SessionGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Delete(':id')
-  async deleteTextChannel(@Param('id', ParseIntPipe) id: number) {
+  async deleteTextChannel(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const user = req.user as User;
+    const channel = await this.textChannelsService.findOne({ id });
+
+    if (!channel) {
+      throw new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!this.canAccessChannel(channel, user)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+
     return this.textChannelsService.deleteTextChannel({ id });
   }
 }

@@ -3,6 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, TextChannel, User } from '@prisma/client';
 import { ChannelWithProvidedNameExistError } from '../utils/customExceptions';
 
+export type TextChannelWithUsers = TextChannel & {
+  users: { id: number }[];
+};
+
 @Injectable()
 export class TextChannelsService {
   constructor(private prisma: PrismaService) {}
@@ -30,7 +34,7 @@ export class TextChannelsService {
     });
   }
 
-  async findOne(where: Prisma.TextChannelWhereUniqueInput): Promise<TextChannel> {
+  async findOne(where: Prisma.TextChannelWhereUniqueInput): Promise<TextChannelWithUsers | null> {
     return this.prisma.textChannel.findUnique({
       where: where,
       include: {
