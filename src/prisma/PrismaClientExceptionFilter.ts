@@ -1,4 +1,4 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpStatus, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 @Catch(
@@ -9,6 +9,8 @@ import { Prisma } from '@prisma/client';
   Prisma.PrismaClientValidationError,
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(PrismaExceptionFilter.name);
+
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
@@ -36,7 +38,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           break;
       }
     } else {
-      console.log(exception);
+      this.logger.error('Unhandled Prisma exception', exception);
     }
 
     response.status(statusCode).json({

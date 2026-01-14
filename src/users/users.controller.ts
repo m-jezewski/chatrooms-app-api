@@ -4,6 +4,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -11,16 +12,16 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Put,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, RegisterUserDto, UpdateUserDto, UserEntity } from './dto/user-crud.dto';
+import { CreateUserDto, UpdateUserDto, UserEntity } from './dto/user-crud.dto';
 import { EmailInUseError } from '../utils/customExceptions';
 import { SessionGuard } from '../auth/guards/session-guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { Request } from 'express';
 import { User } from '@prisma/client';
 
@@ -52,15 +53,10 @@ export class UsersController {
     return new UserEntity(user);
   }
 
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, AdminGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('create')
-  async create(@Body() user: CreateUserDto, @Req() request: Request) {
-    const loggedUser = request.user as User;
-    if (loggedUser.role !== 'ADMIN') {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    }
-
+  async create(@Body() user: CreateUserDto) {
     try {
       const userDb = await this.usersService.createUser(user);
       return new UserEntity(userDb);
@@ -68,17 +64,38 @@ export class UsersController {
       if (error instanceof EmailInUseError) {
         throw new ConflictException(error.message);
       }
+      throw error;
     }
   }
 
   @UseGuards(SessionGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Patch(':id')
-  async updateUser(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateUserDto) {
-    return this.usersService.updateUser({ where: { id }, data });
+  async updateUser(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateUserDto, @Req() request: Request) {
+    const loggedUser = request.user as User;
+
+    if (loggedUser.id !== id && loggedUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only update your own account');
+    }
+
+    if (data.role && loggedUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can change user roles');
+    }
+
+    const updated = await this.usersService.updateUser({ where: { id }, data });
+    return new UserEntity(updated);
   }
   @UseGuards(SessionGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Delete(':id')
-  async deleteUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.deleteUser({ id });
+  async deleteUser(@Param('id', ParseIntPipe) id: number, @Req() request: Request) {
+    const loggedUser = request.user as User;
+
+    if (loggedUser.id !== id && loggedUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only delete your own account');
+    }
+
+    const deleted = await this.usersService.deleteUser({ id });
+    return new UserEntity(deleted);
   }
 }

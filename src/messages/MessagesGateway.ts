@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 import { WsSessionGuard } from '../auth/guards/ws-session-guard';
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { CurrentWsUser } from './current-ws-user.decorator';
 
 @WebSocketGateway(parseInt(process.env.WEBSOCKET_PORT), {
@@ -21,26 +21,27 @@ import { CurrentWsUser } from './current-ws-user.decorator';
 })
 export class MessagesGateway implements OnGatewayInit {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(MessagesGateway.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
   async afterInit(server: Server) {
-    console.log('✅ WebSocket Gateway initialized on port 3001');
+    this.logger.log(`WebSocket Gateway initialized on port ${process.env.WEBSOCKET_PORT}`);
 
     server.on('connection', (socket) => {
       const handshake = socket?.handshake as any;
       const session = handshake.session;
 
       if (!session?.passport?.user) {
-        console.warn('❌ Unauthorized WebSocket connection attempt');
+        this.logger.warn('Unauthorized WebSocket connection attempt');
         socket.disconnect(true);
         return;
       }
-      console.log(`✅ User ${session.passport.user} connected`);
+      this.logger.log(`User ${session.passport.user} connected`);
     });
 
     server.on('connect_error', (err) => {
-      console.error(`❌ WebSocket connection error: ${err.message}`);
+      this.logger.error(`WebSocket connection error: ${err.message}`);
     });
   }
 
@@ -51,7 +52,7 @@ export class MessagesGateway implements OnGatewayInit {
     @ConnectedSocket() client: Socket,
     @CurrentWsUser() userId: number,
   ) {
-    console.log(`User ${userId} is joining channel ${channelId}`);
+    this.logger.log(`User ${userId} is joining channel ${channelId}`);
     const channel = await this.prisma.textChannel.findUnique({
       where: { id: channelId },
       include: { users: true },
@@ -70,7 +71,7 @@ export class MessagesGateway implements OnGatewayInit {
     });
 
     if (!channel) {
-      console.warn(`Channel ${channelId} not found`);
+      this.logger.warn(`Channel ${channelId} not found`);
       return client.emit('error', { message: 'Channel not found' });
     }
 
@@ -91,14 +92,14 @@ export class MessagesGateway implements OnGatewayInit {
     @ConnectedSocket() client: Socket,
     @CurrentWsUser() userId: number,
   ) {
-    console.log(`User ${userId} send message to channel ${channelId}`);
+    this.logger.log(`User ${userId} sending message to channel ${channelId}`);
     const channel = await this.prisma.textChannel.findUnique({
       where: { id: channelId },
       include: { users: true },
     });
 
     if (!channel) {
-      console.warn(`Channel ${channelId} not found`);
+      this.logger.warn(`Channel ${channelId} not found`);
       return client.emit('error', { message: 'Channel not found' });
     }
 
@@ -125,7 +126,7 @@ export class MessagesGateway implements OnGatewayInit {
     @ConnectedSocket() client: Socket,
     @CurrentWsUser() userId: number,
   ) {
-    console.log(`User ${userId} leaving channel ${channelId}`);
+    this.logger.log(`User ${userId} leaving channel ${channelId}`);
     client.leave(`channel_${channelId}`);
     client.emit('leftChannel', { message: `Left channel ${channelId}` });
   }
