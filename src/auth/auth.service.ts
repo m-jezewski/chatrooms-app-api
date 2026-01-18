@@ -40,16 +40,14 @@ export class AuthService {
     return null;
   }
 
-  async logout(req: Request): Promise<any> {
-    try {
+  async logout(req: Request): Promise<{ message: string }> {
+    return new Promise((res, rej) => {
       req.logout((err) => {
         if (err) {
-          throw new UnauthorizedException(err.message);
+          return rej(new UnauthorizedException(err.message));
         }
+        res({ message: 'User logged out' });
       });
-      return JSON.stringify({ message: 'Logged out' });
-    } catch (error) {
-      throw new UnauthorizedException(error.message);
-    }
+    });
   }
 }

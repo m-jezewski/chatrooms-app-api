@@ -41,7 +41,7 @@ export class AuthController {
 
   @UseGuards(SessionGuard)
   @Delete('logout')
-  async logout(@Req() req: Request): Promise<void> {
+  async logout(@Req() req: Request): Promise<{ message: string }> {
     return this.authService.logout(req);
   }
 
