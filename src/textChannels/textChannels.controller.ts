@@ -83,6 +83,7 @@ export class TextChannelsController {
       if (error instanceof ChannelWithProvidedNameExistError) {
         throw new ConflictException(error.message);
       }
+      throw error;
     }
   }
 
