@@ -36,7 +36,7 @@ export class AuthController {
   @Get('status')
   @UseGuards(SessionGuard)
   async getAuthSession(@Req() req) {
-    return req.user;
+    return new UserEntity(req.user);
   }
 
   @UseGuards(SessionGuard)
