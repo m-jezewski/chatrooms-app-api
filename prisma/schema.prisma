@@ -35,11 +35,11 @@ model TextChannel {
 model Message {
   id            Int      @id @default(autoincrement())
   content       String?
-  author        User?    @relation(fields: [authorId], references: [id])
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorId      Int?
   createdAt     DateTime @default(now())
 
-  textChannel   TextChannel? @relation(fields: [textChannelId], references: [id])
+  textChannel   TextChannel? @relation(fields: [textChannelId], references: [id], onDelete: Cascade)
   textChannelId Int?
 }
 
