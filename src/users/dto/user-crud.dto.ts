@@ -1,6 +1,6 @@
 import { IsDate, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { OmitType, PartialType, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Prisma, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { Exclude } from 'class-transformer';
 
 export class UserDto implements User {
@@ -47,9 +47,7 @@ export class RegisterUserDto extends OmitType(UserDto, ['createdAt', 'id', 'role
 // like createUserDto but all properties optional
 class PartialUserDto extends PartialType(CreateUserDto) {}
 
-export class UpdateUserDto
-  extends OmitType<PartialUserDto, 'password'>(PartialUserDto, ['password'] as const)
-  implements Prisma.UserUpdateInput {}
+export class UpdateUserDto extends OmitType(PartialUserDto, ['password'] as const) {}
 
 // with password omitted
 export class UserEntity implements Omit<User, 'password'> {

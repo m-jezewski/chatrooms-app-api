@@ -1,58 +1,97 @@
-import { ClassSerializerInterceptor, ConflictException, Injectable, UseInterceptors } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, User } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import { EmailInUseError } from '../utils/customExceptions';
 import { getHashedPassword } from '../utils/bcrypt';
+import { CreateUserDto, UpdateUserDto } from './dto/user-crud.dto';
+import { EmailInUseError } from '../utils/customExceptions';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findMany(params: Prisma.UserFindManyArgs): Promise<User[]> {
-    const { skip, take, cursor, orderBy, where } = params;
-
-    return this.prisma.user.findMany({
-      skip,
-      take,
-      cursor,
-      orderBy,
-      where,
-    });
+  private canModifyUser(targetUserId: number, loggedUser: User): boolean {
+    return loggedUser.role === 'ADMIN' || loggedUser.id === targetUserId;
   }
 
-  async findOne(where: Prisma.UserWhereUniqueInput): Promise<User> {
-    return this.prisma.user.findUnique({ where });
+  async findUsers(params: { findParams: Prisma.UserFindManyArgs }): Promise<User[]> {
+    return this.prisma.user.findMany(params.findParams);
   }
 
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {
-    const hashedPassword = getHashedPassword(data.password);
-    const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
+  async getUser(params: { userId: number }): Promise<User> {
+    const { userId } = params;
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    if (existingUser) {
-      throw new EmailInUseError();
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
-    return this.prisma.user.create({
-      data: {
-        ...data,
-        password: hashedPassword,
-      },
-    });
+    return user;
   }
 
-  async updateUser(params: { data: Prisma.UserUpdateInput; where: Prisma.UserWhereUniqueInput }): Promise<User> {
-    const { data, where } = params;
+  async getUserByEmail(params: { email: string }): Promise<User> {
+    const { email } = params;
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
-    return this.prisma.user.update({
-      where,
-      data: {
-        ...data,
-      },
-    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
-  async deleteUser(where: Prisma.UserWhereUniqueInput): Promise<User> {
-    return this.prisma.user.delete({ where });
+  async createUser(params: CreateUserDto): Promise<User> {
+    const { role, password, name, email } = params;
+
+    try {
+      return await this.prisma.user.create({
+        data: {
+          name: name,
+          role: role,
+          email: email,
+          password: getHashedPassword(password),
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new EmailInUseError();
+      }
+      throw error;
+    }
+  }
+
+  async updateUser(params: { userId: number; loggedUser: User; data: UpdateUserDto }): Promise<User> {
+    const { userId, loggedUser, data } = params;
+    await this.getUser({ userId });
+
+    if (!this.canModifyUser(userId, loggedUser)) {
+      throw new ForbiddenException('You can only update your own account');
+    }
+
+    if (data.role && loggedUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can change user roles');
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new EmailInUseError();
+      }
+      throw error;
+    }
+  }
+
+  async deleteUser(params: { userId: number; loggedUser: User }): Promise<User> {
+    const { userId, loggedUser } = params;
+    await this.getUser({ userId });
+
+    if (!this.canModifyUser(userId, loggedUser)) {
+      throw new ForbiddenException('You can only delete your own account');
+    }
+
+    return this.prisma.user.delete({ where: { id: userId } });
   }
 }
