@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, TextChannel, User } from '@prisma/client';
 import { ChannelWithProvidedNameExistError } from '../utils/customExceptions';
+import { CreateTextChannelDto, UpdateTextChannelDto } from './dto/textChannels-crud.dto';
 
 export type TextChannelWithUsers = TextChannel & {
   users: { id: number }[];
@@ -11,20 +12,21 @@ export type TextChannelWithUsers = TextChannel & {
 export class TextChannelsService {
   constructor(private prisma: PrismaService) {}
 
-  async findChannelsByUser(params: Prisma.TextChannelFindManyArgs, user: User): Promise<TextChannel[]> {
-    const { skip, take, cursor, orderBy, where } = params;
+  private canAccessChannel(channel: TextChannelWithUsers, user: User): boolean {
+    return user.role === 'ADMIN' || channel.users.some((channelUser) => channelUser.id === user.id);
+  }
+
+  async findChannelsByUser(params: { findParams: Prisma.TextChannelFindManyArgs; user: User }): Promise<TextChannel[]> {
+    const { findParams, user } = params;
 
     if (user.role === 'ADMIN') {
-      return this.prisma.textChannel.findMany(params);
+      return this.prisma.textChannel.findMany(findParams);
     }
 
     return this.prisma.textChannel.findMany({
-      skip,
-      take,
-      cursor,
-      orderBy,
+      ...findParams,
       where: {
-        ...where,
+        ...findParams.where,
         users: {
           some: {
             id: user.id,
@@ -34,9 +36,10 @@ export class TextChannelsService {
     });
   }
 
-  async findOne(where: Prisma.TextChannelWhereUniqueInput): Promise<TextChannelWithUsers | null> {
-    return this.prisma.textChannel.findUnique({
-      where: where,
+  async getChannel(params: { channelId: number; user: User }): Promise<TextChannelWithUsers> {
+    const { channelId, user } = params;
+    const channel = await this.prisma.textChannel.findUnique({
+      where: { id: channelId },
       include: {
         users: {
           select: {
@@ -45,35 +48,72 @@ export class TextChannelsService {
         },
       },
     });
-  }
 
-  async createTextChannel(data: Prisma.TextChannelCreateInput): Promise<TextChannel> {
-    const existingChannel = await this.prisma.textChannel.findFirst({ where: { name: data.name } });
-
-    if (existingChannel) {
-      throw new ChannelWithProvidedNameExistError();
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
     }
 
-    return this.prisma.textChannel.create({ data });
+    if (!this.canAccessChannel(channel, user)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+
+    return channel;
+  }
+
+  async createTextChannel(params: { textChannel: CreateTextChannelDto }): Promise<TextChannel> {
+    const { textChannel } = params;
+
+    try {
+      return await this.prisma.textChannel.create({
+        data: {
+          ...textChannel,
+          users: {
+            connect: textChannel.users.map((userId) => ({ id: userId })),
+          },
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ChannelWithProvidedNameExistError();
+      }
+      throw error;
+    }
   }
 
   async updateTextChannel(params: {
-    data: Prisma.TextChannelUpdateInput;
-    where: Prisma.TextChannelWhereUniqueInput;
+    channelId: number;
+    user: User;
+    textChannel: UpdateTextChannelDto;
   }): Promise<TextChannel> {
-    const { data, where } = params;
+    const { textChannel, channelId, user } = params;
+    await this.getChannel({ channelId, user });
 
-    return this.prisma.textChannel.update({
-      where,
-      data: data,
-    });
+    try {
+      return await this.prisma.textChannel.update({
+        where: { id: channelId },
+        data: {
+          ...textChannel,
+          users: textChannel.users ? { set: textChannel.users.map((userId) => ({ id: userId })) } : undefined,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ChannelWithProvidedNameExistError();
+      }
+      throw error;
+    }
   }
 
-  async deleteTextChannel(where: Prisma.TextChannelWhereUniqueInput): Promise<TextChannel> {
-    return this.prisma.textChannel.delete({ where });
+  async deleteTextChannel(params: { channelId: number; user: User }): Promise<TextChannel> {
+    const { channelId, user } = params;
+    await this.getChannel({ channelId, user });
+    return this.prisma.textChannel.delete({ where: { id: channelId } });
   }
 
-  async updateUsersInChannel({ userIds, channelId }: { userIds: number[]; channelId: number }) {
+  async updateUsersInChannel(params: { userIds: number[]; channelId: number; user: User }) {
+    const { userIds, channelId, user } = params;
+    await this.getChannel({ channelId, user });
+
     await this.prisma.textChannel.update({
       where: { id: channelId },
       data: {

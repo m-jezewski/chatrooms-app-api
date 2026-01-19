@@ -26,8 +26,8 @@ export class TextChannelDto implements TextChannel {
   users: number[];
 }
 
-export class UpdateTextChannelDto extends PartialType(TextChannelDto) {}
-
 export class CreateTextChannelDto extends OmitType(TextChannelDto, ['id', 'createdAt'] as const) {}
+
+export class UpdateTextChannelDto extends PartialType(CreateTextChannelDto) {}
 
 export class UpdateChannelUsersDto extends OmitType(TextChannelDto, ['name', 'id', 'createdAt'] as const) {}
